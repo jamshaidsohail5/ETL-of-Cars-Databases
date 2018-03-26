@@ -1,0 +1,1111 @@
+
+CREATE TABLE Cars
+( 
+  car_id               integer  NOT NULL ,
+  car_year_of_manufacture integer  NULL ,
+  model                integer  NULL ,
+  other_car_details    varchar(50)  NULL ,
+  car_manufacturer_code integer  NULL 
+)
+go
+
+
+
+ALTER TABLE Cars
+  ADD CONSTRAINT XPKCars PRIMARY KEY  CLUSTERED (car_id ASC)
+go
+
+
+
+CREATE TABLE Parts
+( 
+  part_id              integer  NOT NULL ,
+  car_id               integer  NOT NULL ,
+  parent_part_id       integer  NULL ,
+  part_level_code      integer  NULL ,
+  part_manufacturer_code integer  NULL ,
+  part_type_code       integer  NULL ,
+  supplier_id          integer  NULL ,
+  part_name            varchar(50)  NULL ,
+  weight               integer  NULL ,
+  condition            varchar(50)  NULL ,
+  mileage_donor_vehicle integer  NULL ,
+  other_part_details   varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Parts
+  ADD CONSTRAINT XPKParts PRIMARY KEY  CLUSTERED (part_id ASC)
+go
+
+
+
+CREATE TABLE Ref_Car_Manufacturers
+( 
+  car_manufacturer_code integer  NOT NULL ,
+  car_manufacturer_name varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Ref_Car_Manufacturers
+  ADD CONSTRAINT XPKRef_Car_Manufacturers PRIMARY KEY  CLUSTERED (car_manufacturer_code ASC)
+go
+
+
+
+CREATE TABLE Ref_Part_Levels
+( 
+  part_level_code      integer  NOT NULL ,
+  part_level_description varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Ref_Part_Levels
+  ADD CONSTRAINT XPKRef_Part_Levels PRIMARY KEY  CLUSTERED (part_level_code ASC)
+go
+
+
+
+CREATE TABLE Ref_Part_Manufacturers
+( 
+  part_manufacturer_code integer  NOT NULL ,
+  part_manufacturer_name varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Ref_Part_Manufacturers
+  ADD CONSTRAINT XPKRef_Part_Manufacturers PRIMARY KEY  CLUSTERED (part_manufacturer_code ASC)
+go
+
+
+
+CREATE TABLE Ref_Part_Types
+( 
+  part_type_code       integer  NOT NULL ,
+  part_type_description varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Ref_Part_Types
+  ADD CONSTRAINT XPKRef_Part_Types PRIMARY KEY  CLUSTERED (part_type_code ASC)
+go
+
+
+
+CREATE TABLE Suppliers
+( 
+  supplier_id          integer  NOT NULL ,
+  supplier_details     varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Suppliers
+  ADD CONSTRAINT XPKSuppliers PRIMARY KEY  CLUSTERED (supplier_id ASC)
+go
+
+
+
+
+ALTER TABLE Cars
+  ADD CONSTRAINT R_8 FOREIGN KEY (car_manufacturer_code) REFERENCES Ref_Car_Manufacturers(car_manufacturer_code)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Parts
+  ADD CONSTRAINT R_2 FOREIGN KEY (part_manufacturer_code) REFERENCES Ref_Part_Manufacturers(part_manufacturer_code)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Parts
+  ADD CONSTRAINT R_3 FOREIGN KEY (part_level_code) REFERENCES Ref_Part_Levels(part_level_code)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Parts
+  ADD CONSTRAINT R_5 FOREIGN KEY (car_id) REFERENCES Cars(car_id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Parts
+  ADD CONSTRAINT R_6 FOREIGN KEY (supplier_id) REFERENCES Suppliers(supplier_id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Parts
+  ADD CONSTRAINT R_7 FOREIGN KEY (part_type_code) REFERENCES Ref_Part_Types(part_type_code)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Parts
+  ADD CONSTRAINT R_9 FOREIGN KEY (part_id) REFERENCES Parts(part_id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+CREATE TRIGGER tD_Cars ON Cars FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Cars */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Cars  Parts on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00023feb", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_5", FK_COLUMNS="car_id" */
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.car_id = deleted.car_id
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Cars because Parts exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Ref_Car_Manufacturers  Cars on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Ref_Car_Manufacturers"
+    CHILD_OWNER="", CHILD_TABLE="Cars"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_8", FK_COLUMNS="car_manufacturer_code" */
+    IF EXISTS (SELECT * FROM deleted,Ref_Car_Manufacturers
+      WHERE
+        /* %JoinFKPK(deleted,Ref_Car_Manufacturers," = "," AND") */
+        deleted.car_manufacturer_code = Ref_Car_Manufacturers.car_manufacturer_code AND
+        NOT EXISTS (
+          SELECT * FROM Cars
+          WHERE
+            /* %JoinFKPK(Cars,Ref_Car_Manufacturers," = "," AND") */
+            Cars.car_manufacturer_code = Ref_Car_Manufacturers.car_manufacturer_code
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Cars because Ref_Car_Manufacturers exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Cars ON Cars FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Cars */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inscar_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Cars  Parts on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="00028f01", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_5", FK_COLUMNS="car_id" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(car_id)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.car_id = deleted.car_id
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Cars because Parts exists.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Ref_Car_Manufacturers  Cars on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Ref_Car_Manufacturers"
+    CHILD_OWNER="", CHILD_TABLE="Cars"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_8", FK_COLUMNS="car_manufacturer_code" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(car_manufacturer_code)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Ref_Car_Manufacturers
+        WHERE
+          /* %JoinFKPK(inserted,Ref_Car_Manufacturers) */
+          inserted.car_manufacturer_code = Ref_Car_Manufacturers.car_manufacturer_code
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.car_manufacturer_code IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Cars because Ref_Car_Manufacturers does not exist.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Parts ON Parts FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Parts */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Parts  Parts on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0007f8b6", PARENT_OWNER="", PARENT_TABLE="Parts"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_9", FK_COLUMNS="part_id" */
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.part_id = deleted.part_id
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Parts because Parts exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Ref_Part_Manufacturers  Parts on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Manufacturers"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_2", FK_COLUMNS="part_manufacturer_code" */
+    IF EXISTS (SELECT * FROM deleted,Ref_Part_Manufacturers
+      WHERE
+        /* %JoinFKPK(deleted,Ref_Part_Manufacturers," = "," AND") */
+        deleted.part_manufacturer_code = Ref_Part_Manufacturers.part_manufacturer_code AND
+        NOT EXISTS (
+          SELECT * FROM Parts
+          WHERE
+            /* %JoinFKPK(Parts,Ref_Part_Manufacturers," = "," AND") */
+            Parts.part_manufacturer_code = Ref_Part_Manufacturers.part_manufacturer_code
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Parts because Ref_Part_Manufacturers exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Ref_Part_Levels  Parts on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Levels"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_3", FK_COLUMNS="part_level_code" */
+    IF EXISTS (SELECT * FROM deleted,Ref_Part_Levels
+      WHERE
+        /* %JoinFKPK(deleted,Ref_Part_Levels," = "," AND") */
+        deleted.part_level_code = Ref_Part_Levels.part_level_code AND
+        NOT EXISTS (
+          SELECT * FROM Parts
+          WHERE
+            /* %JoinFKPK(Parts,Ref_Part_Levels," = "," AND") */
+            Parts.part_level_code = Ref_Part_Levels.part_level_code
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Parts because Ref_Part_Levels exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Cars  Parts on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_5", FK_COLUMNS="car_id" */
+    IF EXISTS (SELECT * FROM deleted,Cars
+      WHERE
+        /* %JoinFKPK(deleted,Cars," = "," AND") */
+        deleted.car_id = Cars.car_id AND
+        NOT EXISTS (
+          SELECT * FROM Parts
+          WHERE
+            /* %JoinFKPK(Parts,Cars," = "," AND") */
+            Parts.car_id = Cars.car_id
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Parts because Cars exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Suppliers  Parts on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Suppliers"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_6", FK_COLUMNS="supplier_id" */
+    IF EXISTS (SELECT * FROM deleted,Suppliers
+      WHERE
+        /* %JoinFKPK(deleted,Suppliers," = "," AND") */
+        deleted.supplier_id = Suppliers.supplier_id AND
+        NOT EXISTS (
+          SELECT * FROM Parts
+          WHERE
+            /* %JoinFKPK(Parts,Suppliers," = "," AND") */
+            Parts.supplier_id = Suppliers.supplier_id
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Parts because Suppliers exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Ref_Part_Types  Parts on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Types"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_7", FK_COLUMNS="part_type_code" */
+    IF EXISTS (SELECT * FROM deleted,Ref_Part_Types
+      WHERE
+        /* %JoinFKPK(deleted,Ref_Part_Types," = "," AND") */
+        deleted.part_type_code = Ref_Part_Types.part_type_code AND
+        NOT EXISTS (
+          SELECT * FROM Parts
+          WHERE
+            /* %JoinFKPK(Parts,Ref_Part_Types," = "," AND") */
+            Parts.part_type_code = Ref_Part_Types.part_type_code
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Parts because Ref_Part_Types exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Parts  Parts on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Parts"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_9", FK_COLUMNS="part_id" */
+    IF EXISTS (SELECT * FROM deleted,Parts
+      WHERE
+        /* %JoinFKPK(deleted,Parts," = "," AND") */
+        deleted.part_id = Parts.part_id AND
+        NOT EXISTS (
+          SELECT * FROM Parts
+          WHERE
+            /* %JoinFKPK(Parts,Parts," = "," AND") */
+            Parts.part_id = Parts.part_id
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Parts because Parts exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Parts ON Parts FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Parts */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inspart_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Parts  Parts on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="0009987c", PARENT_OWNER="", PARENT_TABLE="Parts"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_9", FK_COLUMNS="part_id" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(part_id)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.part_id = deleted.part_id
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Parts because Parts exists.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Ref_Part_Manufacturers  Parts on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Manufacturers"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_2", FK_COLUMNS="part_manufacturer_code" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(part_manufacturer_code)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Ref_Part_Manufacturers
+        WHERE
+          /* %JoinFKPK(inserted,Ref_Part_Manufacturers) */
+          inserted.part_manufacturer_code = Ref_Part_Manufacturers.part_manufacturer_code
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.part_manufacturer_code IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Parts because Ref_Part_Manufacturers does not exist.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Ref_Part_Levels  Parts on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Levels"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_3", FK_COLUMNS="part_level_code" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(part_level_code)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Ref_Part_Levels
+        WHERE
+          /* %JoinFKPK(inserted,Ref_Part_Levels) */
+          inserted.part_level_code = Ref_Part_Levels.part_level_code
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.part_level_code IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Parts because Ref_Part_Levels does not exist.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Cars  Parts on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_5", FK_COLUMNS="car_id" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(car_id)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Cars
+        WHERE
+          /* %JoinFKPK(inserted,Cars) */
+          inserted.car_id = Cars.car_id
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Parts because Cars does not exist.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Suppliers  Parts on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Suppliers"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_6", FK_COLUMNS="supplier_id" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(supplier_id)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Suppliers
+        WHERE
+          /* %JoinFKPK(inserted,Suppliers) */
+          inserted.supplier_id = Suppliers.supplier_id
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.supplier_id IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Parts because Suppliers does not exist.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Ref_Part_Types  Parts on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Types"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_7", FK_COLUMNS="part_type_code" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(part_type_code)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Ref_Part_Types
+        WHERE
+          /* %JoinFKPK(inserted,Ref_Part_Types) */
+          inserted.part_type_code = Ref_Part_Types.part_type_code
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.part_type_code IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Parts because Ref_Part_Types does not exist.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Parts  Parts on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Parts"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_9", FK_COLUMNS="part_id" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(part_id)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Parts
+        WHERE
+          /* %JoinFKPK(inserted,Parts) */
+          inserted.part_id = Parts.part_id
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.part_id IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Parts because Parts does not exist.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Ref_Car_Manufacturers ON Ref_Car_Manufacturers FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Ref_Car_Manufacturers */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Ref_Car_Manufacturers  Cars on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0000f914", PARENT_OWNER="", PARENT_TABLE="Ref_Car_Manufacturers"
+    CHILD_OWNER="", CHILD_TABLE="Cars"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_8", FK_COLUMNS="car_manufacturer_code" */
+    IF EXISTS (
+      SELECT * FROM deleted,Cars
+      WHERE
+        /*  %JoinFKPK(Cars,deleted," = "," AND") */
+        Cars.car_manufacturer_code = deleted.car_manufacturer_code
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Ref_Car_Manufacturers because Cars exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Ref_Car_Manufacturers ON Ref_Car_Manufacturers FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Ref_Car_Manufacturers */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inscar_manufacturer_code integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Ref_Car_Manufacturers  Cars on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="000121cd", PARENT_OWNER="", PARENT_TABLE="Ref_Car_Manufacturers"
+    CHILD_OWNER="", CHILD_TABLE="Cars"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_8", FK_COLUMNS="car_manufacturer_code" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(car_manufacturer_code)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Cars
+      WHERE
+        /*  %JoinFKPK(Cars,deleted," = "," AND") */
+        Cars.car_manufacturer_code = deleted.car_manufacturer_code
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Ref_Car_Manufacturers because Cars exists.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Ref_Part_Levels ON Ref_Part_Levels FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Ref_Part_Levels */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Ref_Part_Levels  Parts on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0000fa09", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Levels"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_3", FK_COLUMNS="part_level_code" */
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.part_level_code = deleted.part_level_code
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Ref_Part_Levels because Parts exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Ref_Part_Levels ON Ref_Part_Levels FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Ref_Part_Levels */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inspart_level_code integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Ref_Part_Levels  Parts on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="00010ee2", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Levels"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_3", FK_COLUMNS="part_level_code" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(part_level_code)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.part_level_code = deleted.part_level_code
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Ref_Part_Levels because Parts exists.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Ref_Part_Manufacturers ON Ref_Part_Manufacturers FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Ref_Part_Manufacturers */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Ref_Part_Manufacturers  Parts on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00010284", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Manufacturers"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_2", FK_COLUMNS="part_manufacturer_code" */
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.part_manufacturer_code = deleted.part_manufacturer_code
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Ref_Part_Manufacturers because Parts exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Ref_Part_Manufacturers ON Ref_Part_Manufacturers FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Ref_Part_Manufacturers */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inspart_manufacturer_code integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Ref_Part_Manufacturers  Parts on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="0001266b", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Manufacturers"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_2", FK_COLUMNS="part_manufacturer_code" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(part_manufacturer_code)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.part_manufacturer_code = deleted.part_manufacturer_code
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Ref_Part_Manufacturers because Parts exists.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Ref_Part_Types ON Ref_Part_Types FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Ref_Part_Types */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Ref_Part_Types  Parts on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0000f9aa", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Types"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_7", FK_COLUMNS="part_type_code" */
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.part_type_code = deleted.part_type_code
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Ref_Part_Types because Parts exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Ref_Part_Types ON Ref_Part_Types FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Ref_Part_Types */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inspart_type_code integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Ref_Part_Types  Parts on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="000110ee", PARENT_OWNER="", PARENT_TABLE="Ref_Part_Types"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_7", FK_COLUMNS="part_type_code" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(part_type_code)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.part_type_code = deleted.part_type_code
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Ref_Part_Types because Parts exists.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Suppliers ON Suppliers FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Suppliers */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Suppliers  Parts on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0000f269", PARENT_OWNER="", PARENT_TABLE="Suppliers"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_6", FK_COLUMNS="supplier_id" */
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.supplier_id = deleted.supplier_id
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Suppliers because Parts exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Suppliers ON Suppliers FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Suppliers */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inssupplier_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Suppliers  Parts on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="0000fe09", PARENT_OWNER="", PARENT_TABLE="Suppliers"
+    CHILD_OWNER="", CHILD_TABLE="Parts"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_6", FK_COLUMNS="supplier_id" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(supplier_id)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Parts
+      WHERE
+        /*  %JoinFKPK(Parts,deleted," = "," AND") */
+        Parts.supplier_id = deleted.supplier_id
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Suppliers because Parts exists.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+

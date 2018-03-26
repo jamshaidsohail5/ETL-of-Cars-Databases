@@ -1,0 +1,1498 @@
+
+CREATE TABLE Cars
+( 
+  licence_number       integer  NOT NULL ,
+  model_code           integer  NULL ,
+  customer_id          integer  NULL ,
+  current_milage       integer  NULL ,
+  engine_size          integer  NULL ,
+  other_car_details    varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Cars
+  ADD CONSTRAINT XPKCars PRIMARY KEY  CLUSTERED (licence_number ASC)
+go
+
+
+
+CREATE TABLE Contacts
+( 
+  contact_id           integer  NOT NULL ,
+  first_name           varchar(50)  NULL ,
+  middle_name          varchar(50)  NULL ,
+  last_name            varchar(50)  NULL ,
+  gender               varchar(50)  NULL ,
+  email_Address        varchar(50)  NULL ,
+  phone_number         varchar(50)  NULL ,
+  address_line_1       varchar(50)  NULL ,
+  address_line_2       varchar(50)  NULL ,
+  address_line_3       varchar(50)  NULL ,
+  address_line_4       varchar(50)  NULL ,
+  town_city            varchar(50)  NULL ,
+  state_country_province varchar(50)  NULL ,
+  country              varchar(50)  NULL ,
+  other_details        varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Contacts
+  ADD CONSTRAINT XPKContacts PRIMARY KEY  CLUSTERED (contact_id ASC)
+go
+
+
+
+CREATE TABLE Defects
+( 
+  defect_id            integer  NOT NULL ,
+  licence_number       integer  NULL ,
+  defect_description   varchar(50)  NULL ,
+  date_defect_recorded datetime  NULL ,
+  other_details        varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Defects
+  ADD CONSTRAINT XPKDefects PRIMARY KEY  CLUSTERED (defect_id ASC)
+go
+
+
+
+CREATE TABLE Manufactures
+( 
+  manufacture_code     integer  NOT NULL ,
+  manufacture_name     varchar(50)  NULL ,
+  manufacture_details  varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Manufactures
+  ADD CONSTRAINT XPKManufactures PRIMARY KEY  CLUSTERED (manufacture_code ASC)
+go
+
+
+
+CREATE TABLE Mechanics
+( 
+  mechanic_id          integer  NOT NULL ,
+  mechanic_name        varchar(50)  NULL ,
+  mechanic_details     varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Mechanics
+  ADD CONSTRAINT XPKMechanics PRIMARY KEY  CLUSTERED (mechanic_id ASC)
+go
+
+
+
+CREATE TABLE Mechanics_on_Services
+( 
+  mechanic_id          integer  NOT NULL ,
+  svc_booking_id       integer  NOT NULL 
+)
+go
+
+
+
+ALTER TABLE Mechanics_on_Services
+  ADD CONSTRAINT XPKMechanics_on_Services PRIMARY KEY  CLUSTERED (mechanic_id ASC,svc_booking_id ASC)
+go
+
+
+
+CREATE TABLE Models
+( 
+  model_code           integer  NOT NULL ,
+  model_name           varchar(50)  NULL ,
+  other_details        varchar(50)  NULL ,
+  manufacture_code     integer  NULL 
+)
+go
+
+
+
+ALTER TABLE Models
+  ADD CONSTRAINT XPKModels PRIMARY KEY  CLUSTERED (model_code ASC)
+go
+
+
+
+CREATE TABLE Parts
+( 
+  part_id              integer  NOT NULL ,
+  part_name            varchar(50)  NULL ,
+  part_description     varchar(50)  NULL ,
+  number_in_stock      integer  NULL ,
+  other_details        varchar(50)  NULL 
+)
+go
+
+
+
+ALTER TABLE Parts
+  ADD CONSTRAINT XPKParts PRIMARY KEY  CLUSTERED (part_id ASC)
+go
+
+
+
+CREATE TABLE Parts_Order_List
+( 
+  booking_id           integer  NOT NULL ,
+  part_id              integer  NOT NULL 
+)
+go
+
+
+
+ALTER TABLE Parts_Order_List
+  ADD CONSTRAINT XPKParts_Order_List PRIMARY KEY  CLUSTERED (booking_id ASC,part_id ASC)
+go
+
+
+
+CREATE TABLE Service_Bookings
+( 
+  contact_id           integer  NULL ,
+  licence_number       integer  NULL ,
+  date_of_booking      datetime  NULL ,
+  booking_details      varchar(50)  NULL ,
+  booking_id           integer  NOT NULL 
+)
+go
+
+
+
+ALTER TABLE Service_Bookings
+  ADD CONSTRAINT XPKService_Bookings PRIMARY KEY  CLUSTERED (booking_id ASC)
+go
+
+
+
+
+ALTER TABLE Cars
+  ADD CONSTRAINT R_7 FOREIGN KEY (model_code) REFERENCES Models(model_code)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Defects
+  ADD CONSTRAINT R_8 FOREIGN KEY (licence_number) REFERENCES Cars(licence_number)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Mechanics_on_Services
+  ADD CONSTRAINT R_21 FOREIGN KEY (mechanic_id) REFERENCES Mechanics(mechanic_id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Mechanics_on_Services
+  ADD CONSTRAINT R_11 FOREIGN KEY (svc_booking_id) REFERENCES Service_Bookings(booking_id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Models
+  ADD CONSTRAINT R_6 FOREIGN KEY (manufacture_code) REFERENCES Manufactures(manufacture_code)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Parts_Order_List
+  ADD CONSTRAINT R_26 FOREIGN KEY (part_id) REFERENCES Parts(part_id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Parts_Order_List
+  ADD CONSTRAINT R_28 FOREIGN KEY (booking_id) REFERENCES Service_Bookings(booking_id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Service_Bookings
+  ADD CONSTRAINT R_9 FOREIGN KEY (licence_number) REFERENCES Cars(licence_number)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+ALTER TABLE Service_Bookings
+  ADD CONSTRAINT R_10 FOREIGN KEY (contact_id) REFERENCES Contacts(contact_id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+go
+
+
+
+
+CREATE TRIGGER tD_Cars ON Cars FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Cars */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Cars  Defects on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00030498", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Defects"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_8", FK_COLUMNS="licence_number" */
+    IF EXISTS (
+      SELECT * FROM deleted,Defects
+      WHERE
+        /*  %JoinFKPK(Defects,deleted," = "," AND") */
+        Defects.licence_number = deleted.licence_number
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Cars because Defects exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Cars  Service_Bookings on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Service_Bookings"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_9", FK_COLUMNS="licence_number" */
+    IF EXISTS (
+      SELECT * FROM deleted,Service_Bookings
+      WHERE
+        /*  %JoinFKPK(Service_Bookings,deleted," = "," AND") */
+        Service_Bookings.licence_number = deleted.licence_number
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Cars because Service_Bookings exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Models  Cars on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Models"
+    CHILD_OWNER="", CHILD_TABLE="Cars"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_7", FK_COLUMNS="model_code" */
+    IF EXISTS (SELECT * FROM deleted,Models
+      WHERE
+        /* %JoinFKPK(deleted,Models," = "," AND") */
+        deleted.model_code = Models.model_code AND
+        NOT EXISTS (
+          SELECT * FROM Cars
+          WHERE
+            /* %JoinFKPK(Cars,Models," = "," AND") */
+            Cars.model_code = Models.model_code
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Cars because Models exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Cars ON Cars FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Cars */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inslicence_number integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Cars  Defects on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="00037aba", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Defects"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_8", FK_COLUMNS="licence_number" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(licence_number)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Defects
+      WHERE
+        /*  %JoinFKPK(Defects,deleted," = "," AND") */
+        Defects.licence_number = deleted.licence_number
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Cars because Defects exists.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Cars  Service_Bookings on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Service_Bookings"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_9", FK_COLUMNS="licence_number" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(licence_number)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Service_Bookings
+      WHERE
+        /*  %JoinFKPK(Service_Bookings,deleted," = "," AND") */
+        Service_Bookings.licence_number = deleted.licence_number
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Cars because Service_Bookings exists.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Models  Cars on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Models"
+    CHILD_OWNER="", CHILD_TABLE="Cars"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_7", FK_COLUMNS="model_code" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(model_code)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Models
+        WHERE
+          /* %JoinFKPK(inserted,Models) */
+          inserted.model_code = Models.model_code
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.model_code IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Cars because Models does not exist.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Contacts ON Contacts FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Contacts */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Contacts  Service_Bookings on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00010124", PARENT_OWNER="", PARENT_TABLE="Contacts"
+    CHILD_OWNER="", CHILD_TABLE="Service_Bookings"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_10", FK_COLUMNS="contact_id" */
+    IF EXISTS (
+      SELECT * FROM deleted,Service_Bookings
+      WHERE
+        /*  %JoinFKPK(Service_Bookings,deleted," = "," AND") */
+        Service_Bookings.contact_id = deleted.contact_id
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Contacts because Service_Bookings exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Contacts ON Contacts FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Contacts */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inscontact_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Contacts  Service_Bookings on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="00011a6f", PARENT_OWNER="", PARENT_TABLE="Contacts"
+    CHILD_OWNER="", CHILD_TABLE="Service_Bookings"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_10", FK_COLUMNS="contact_id" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(contact_id)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Service_Bookings
+      WHERE
+        /*  %JoinFKPK(Service_Bookings,deleted," = "," AND") */
+        Service_Bookings.contact_id = deleted.contact_id
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Contacts because Service_Bookings exists.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Defects ON Defects FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Defects */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Cars  Defects on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0001277b", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Defects"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_8", FK_COLUMNS="licence_number" */
+    IF EXISTS (SELECT * FROM deleted,Cars
+      WHERE
+        /* %JoinFKPK(deleted,Cars," = "," AND") */
+        deleted.licence_number = Cars.licence_number AND
+        NOT EXISTS (
+          SELECT * FROM Defects
+          WHERE
+            /* %JoinFKPK(Defects,Cars," = "," AND") */
+            Defects.licence_number = Cars.licence_number
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Defects because Cars exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Defects ON Defects FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Defects */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @insdefect_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Cars  Defects on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00017208", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Defects"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_8", FK_COLUMNS="licence_number" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(licence_number)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Cars
+        WHERE
+          /* %JoinFKPK(inserted,Cars) */
+          inserted.licence_number = Cars.licence_number
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.licence_number IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Defects because Cars does not exist.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Manufactures ON Manufactures FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Manufactures */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Manufactures  Models on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0000f763", PARENT_OWNER="", PARENT_TABLE="Manufactures"
+    CHILD_OWNER="", CHILD_TABLE="Models"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_6", FK_COLUMNS="manufacture_code" */
+    IF EXISTS (
+      SELECT * FROM deleted,Models
+      WHERE
+        /*  %JoinFKPK(Models,deleted," = "," AND") */
+        Models.manufacture_code = deleted.manufacture_code
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Manufactures because Models exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Manufactures ON Manufactures FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Manufactures */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @insmanufacture_code integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Manufactures  Models on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="0001162a", PARENT_OWNER="", PARENT_TABLE="Manufactures"
+    CHILD_OWNER="", CHILD_TABLE="Models"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_6", FK_COLUMNS="manufacture_code" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(manufacture_code)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Models
+      WHERE
+        /*  %JoinFKPK(Models,deleted," = "," AND") */
+        Models.manufacture_code = deleted.manufacture_code
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Manufactures because Models exists.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Mechanics ON Mechanics FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Mechanics */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Mechanics  Mechanics_on_Services on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00011156", PARENT_OWNER="", PARENT_TABLE="Mechanics"
+    CHILD_OWNER="", CHILD_TABLE="Mechanics_on_Services"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_21", FK_COLUMNS="mechanic_id" */
+    IF EXISTS (
+      SELECT * FROM deleted,Mechanics_on_Services
+      WHERE
+        /*  %JoinFKPK(Mechanics_on_Services,deleted," = "," AND") */
+        Mechanics_on_Services.mechanic_id = deleted.mechanic_id
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Mechanics because Mechanics_on_Services exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Mechanics ON Mechanics FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Mechanics */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @insmechanic_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Mechanics  Mechanics_on_Services on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="000128cf", PARENT_OWNER="", PARENT_TABLE="Mechanics"
+    CHILD_OWNER="", CHILD_TABLE="Mechanics_on_Services"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_21", FK_COLUMNS="mechanic_id" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(mechanic_id)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Mechanics_on_Services
+      WHERE
+        /*  %JoinFKPK(Mechanics_on_Services,deleted," = "," AND") */
+        Mechanics_on_Services.mechanic_id = deleted.mechanic_id
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Mechanics because Mechanics_on_Services exists.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Mechanics_on_Services ON Mechanics_on_Services FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Mechanics_on_Services */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Mechanics  Mechanics_on_Services on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0002c513", PARENT_OWNER="", PARENT_TABLE="Mechanics"
+    CHILD_OWNER="", CHILD_TABLE="Mechanics_on_Services"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_21", FK_COLUMNS="mechanic_id" */
+    IF EXISTS (SELECT * FROM deleted,Mechanics
+      WHERE
+        /* %JoinFKPK(deleted,Mechanics," = "," AND") */
+        deleted.mechanic_id = Mechanics.mechanic_id AND
+        NOT EXISTS (
+          SELECT * FROM Mechanics_on_Services
+          WHERE
+            /* %JoinFKPK(Mechanics_on_Services,Mechanics," = "," AND") */
+            Mechanics_on_Services.mechanic_id = Mechanics.mechanic_id
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Mechanics_on_Services because Mechanics exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Service_Bookings  Mechanics_on_Services on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Service_Bookings"
+    CHILD_OWNER="", CHILD_TABLE="Mechanics_on_Services"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_11", FK_COLUMNS="svc_booking_id" */
+    IF EXISTS (SELECT * FROM deleted,Service_Bookings
+      WHERE
+        /* %JoinFKPK(deleted,Service_Bookings," = "," AND") */
+        deleted.svc_booking_id = Service_Bookings.booking_id AND
+        NOT EXISTS (
+          SELECT * FROM Mechanics_on_Services
+          WHERE
+            /* %JoinFKPK(Mechanics_on_Services,Service_Bookings," = "," AND") */
+            Mechanics_on_Services.svc_booking_id = Service_Bookings.booking_id
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Mechanics_on_Services because Service_Bookings exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Mechanics_on_Services ON Mechanics_on_Services FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Mechanics_on_Services */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @insmechanic_id integer, 
+           @inssvc_booking_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Mechanics  Mechanics_on_Services on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="0002e88f", PARENT_OWNER="", PARENT_TABLE="Mechanics"
+    CHILD_OWNER="", CHILD_TABLE="Mechanics_on_Services"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_21", FK_COLUMNS="mechanic_id" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(mechanic_id)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Mechanics
+        WHERE
+          /* %JoinFKPK(inserted,Mechanics) */
+          inserted.mechanic_id = Mechanics.mechanic_id
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Mechanics_on_Services because Mechanics does not exist.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Service_Bookings  Mechanics_on_Services on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Service_Bookings"
+    CHILD_OWNER="", CHILD_TABLE="Mechanics_on_Services"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_11", FK_COLUMNS="svc_booking_id" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(svc_booking_id)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Service_Bookings
+        WHERE
+          /* %JoinFKPK(inserted,Service_Bookings) */
+          inserted.svc_booking_id = Service_Bookings.booking_id
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Mechanics_on_Services because Service_Bookings does not exist.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Models ON Models FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Models */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Models  Cars on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00022887", PARENT_OWNER="", PARENT_TABLE="Models"
+    CHILD_OWNER="", CHILD_TABLE="Cars"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_7", FK_COLUMNS="model_code" */
+    IF EXISTS (
+      SELECT * FROM deleted,Cars
+      WHERE
+        /*  %JoinFKPK(Cars,deleted," = "," AND") */
+        Cars.model_code = deleted.model_code
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Models because Cars exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Manufactures  Models on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Manufactures"
+    CHILD_OWNER="", CHILD_TABLE="Models"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_6", FK_COLUMNS="manufacture_code" */
+    IF EXISTS (SELECT * FROM deleted,Manufactures
+      WHERE
+        /* %JoinFKPK(deleted,Manufactures," = "," AND") */
+        deleted.manufacture_code = Manufactures.manufacture_code AND
+        NOT EXISTS (
+          SELECT * FROM Models
+          WHERE
+            /* %JoinFKPK(Models,Manufactures," = "," AND") */
+            Models.manufacture_code = Manufactures.manufacture_code
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Models because Manufactures exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Models ON Models FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Models */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @insmodel_code integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Models  Cars on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="00028de5", PARENT_OWNER="", PARENT_TABLE="Models"
+    CHILD_OWNER="", CHILD_TABLE="Cars"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_7", FK_COLUMNS="model_code" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(model_code)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Cars
+      WHERE
+        /*  %JoinFKPK(Cars,deleted," = "," AND") */
+        Cars.model_code = deleted.model_code
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Models because Cars exists.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Manufactures  Models on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Manufactures"
+    CHILD_OWNER="", CHILD_TABLE="Models"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_6", FK_COLUMNS="manufacture_code" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(manufacture_code)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Manufactures
+        WHERE
+          /* %JoinFKPK(inserted,Manufactures) */
+          inserted.manufacture_code = Manufactures.manufacture_code
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.manufacture_code IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Models because Manufactures does not exist.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Parts ON Parts FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Parts */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Parts  Parts_Order_List on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0000fe19", PARENT_OWNER="", PARENT_TABLE="Parts"
+    CHILD_OWNER="", CHILD_TABLE="Parts_Order_List"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_26", FK_COLUMNS="part_id" */
+    IF EXISTS (
+      SELECT * FROM deleted,Parts_Order_List
+      WHERE
+        /*  %JoinFKPK(Parts_Order_List,deleted," = "," AND") */
+        Parts_Order_List.part_id = deleted.part_id
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Parts because Parts_Order_List exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Parts ON Parts FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Parts */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @inspart_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Parts  Parts_Order_List on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="00011992", PARENT_OWNER="", PARENT_TABLE="Parts"
+    CHILD_OWNER="", CHILD_TABLE="Parts_Order_List"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_26", FK_COLUMNS="part_id" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(part_id)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Parts_Order_List
+      WHERE
+        /*  %JoinFKPK(Parts_Order_List,deleted," = "," AND") */
+        Parts_Order_List.part_id = deleted.part_id
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Parts because Parts_Order_List exists.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Parts_Order_List ON Parts_Order_List FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Parts_Order_List */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Parts  Parts_Order_List on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0002911b", PARENT_OWNER="", PARENT_TABLE="Parts"
+    CHILD_OWNER="", CHILD_TABLE="Parts_Order_List"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_26", FK_COLUMNS="part_id" */
+    IF EXISTS (SELECT * FROM deleted,Parts
+      WHERE
+        /* %JoinFKPK(deleted,Parts," = "," AND") */
+        deleted.part_id = Parts.part_id AND
+        NOT EXISTS (
+          SELECT * FROM Parts_Order_List
+          WHERE
+            /* %JoinFKPK(Parts_Order_List,Parts," = "," AND") */
+            Parts_Order_List.part_id = Parts.part_id
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Parts_Order_List because Parts exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Service_Bookings  Parts_Order_List on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Service_Bookings"
+    CHILD_OWNER="", CHILD_TABLE="Parts_Order_List"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_28", FK_COLUMNS="booking_id" */
+    IF EXISTS (SELECT * FROM deleted,Service_Bookings
+      WHERE
+        /* %JoinFKPK(deleted,Service_Bookings," = "," AND") */
+        deleted.booking_id = Service_Bookings.booking_id AND
+        NOT EXISTS (
+          SELECT * FROM Parts_Order_List
+          WHERE
+            /* %JoinFKPK(Parts_Order_List,Service_Bookings," = "," AND") */
+            Parts_Order_List.booking_id = Service_Bookings.booking_id
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Parts_Order_List because Service_Bookings exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Parts_Order_List ON Parts_Order_List FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Parts_Order_List */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @insbooking_id integer, 
+           @inspart_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Parts  Parts_Order_List on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="0002b382", PARENT_OWNER="", PARENT_TABLE="Parts"
+    CHILD_OWNER="", CHILD_TABLE="Parts_Order_List"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_26", FK_COLUMNS="part_id" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(part_id)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Parts
+        WHERE
+          /* %JoinFKPK(inserted,Parts) */
+          inserted.part_id = Parts.part_id
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Parts_Order_List because Parts does not exist.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Service_Bookings  Parts_Order_List on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Service_Bookings"
+    CHILD_OWNER="", CHILD_TABLE="Parts_Order_List"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_28", FK_COLUMNS="booking_id" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(booking_id)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Service_Bookings
+        WHERE
+          /* %JoinFKPK(inserted,Service_Bookings) */
+          inserted.booking_id = Service_Bookings.booking_id
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Parts_Order_List because Service_Bookings does not exist.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+
+
+CREATE TRIGGER tD_Service_Bookings ON Service_Bookings FOR DELETE AS
+/* ERwin Builtin Trigger */
+/* DELETE trigger on Service_Bookings */
+BEGIN
+  DECLARE  @errno   int,
+           @errmsg  varchar(255)
+    /* ERwin Builtin Trigger */
+    /* Service_Bookings  Parts_Order_List on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="0004bb7e", PARENT_OWNER="", PARENT_TABLE="Service_Bookings"
+    CHILD_OWNER="", CHILD_TABLE="Parts_Order_List"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_28", FK_COLUMNS="booking_id" */
+    IF EXISTS (
+      SELECT * FROM deleted,Parts_Order_List
+      WHERE
+        /*  %JoinFKPK(Parts_Order_List,deleted," = "," AND") */
+        Parts_Order_List.booking_id = deleted.booking_id
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Service_Bookings because Parts_Order_List exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Service_Bookings  Mechanics_on_Services on parent delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Service_Bookings"
+    CHILD_OWNER="", CHILD_TABLE="Mechanics_on_Services"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_11", FK_COLUMNS="svc_booking_id" */
+    IF EXISTS (
+      SELECT * FROM deleted,Mechanics_on_Services
+      WHERE
+        /*  %JoinFKPK(Mechanics_on_Services,deleted," = "," AND") */
+        Mechanics_on_Services.svc_booking_id = deleted.booking_id
+    )
+    BEGIN
+      SELECT @errno  = 30001,
+             @errmsg = 'Cannot delete Service_Bookings because Mechanics_on_Services exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Cars  Service_Bookings on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Service_Bookings"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_9", FK_COLUMNS="licence_number" */
+    IF EXISTS (SELECT * FROM deleted,Cars
+      WHERE
+        /* %JoinFKPK(deleted,Cars," = "," AND") */
+        deleted.licence_number = Cars.licence_number AND
+        NOT EXISTS (
+          SELECT * FROM Service_Bookings
+          WHERE
+            /* %JoinFKPK(Service_Bookings,Cars," = "," AND") */
+            Service_Bookings.licence_number = Cars.licence_number
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Service_Bookings because Cars exists.'
+      GOTO ERROR
+    END
+
+    /* ERwin Builtin Trigger */
+    /* Contacts  Service_Bookings on child delete no action */
+    /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Contacts"
+    CHILD_OWNER="", CHILD_TABLE="Service_Bookings"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_10", FK_COLUMNS="contact_id" */
+    IF EXISTS (SELECT * FROM deleted,Contacts
+      WHERE
+        /* %JoinFKPK(deleted,Contacts," = "," AND") */
+        deleted.contact_id = Contacts.contact_id AND
+        NOT EXISTS (
+          SELECT * FROM Service_Bookings
+          WHERE
+            /* %JoinFKPK(Service_Bookings,Contacts," = "," AND") */
+            Service_Bookings.contact_id = Contacts.contact_id
+        )
+    )
+    BEGIN
+      SELECT @errno  = 30010,
+             @errmsg = 'Cannot delete last Service_Bookings because Contacts exists.'
+      GOTO ERROR
+    END
+
+
+    /* ERwin Builtin Trigger */
+    RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+
+CREATE TRIGGER tU_Service_Bookings ON Service_Bookings FOR UPDATE AS
+/* ERwin Builtin Trigger */
+/* UPDATE trigger on Service_Bookings */
+BEGIN
+  DECLARE  @NUMROWS int,
+           @nullcnt int,
+           @validcnt int,
+           @insbooking_id integer,
+           @errno   int,
+           @errmsg  varchar(255)
+
+  SELECT @NUMROWS = @@rowcount
+  /* ERwin Builtin Trigger */
+  /* Service_Bookings  Parts_Order_List on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="00054224", PARENT_OWNER="", PARENT_TABLE="Service_Bookings"
+    CHILD_OWNER="", CHILD_TABLE="Parts_Order_List"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_28", FK_COLUMNS="booking_id" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(booking_id)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Parts_Order_List
+      WHERE
+        /*  %JoinFKPK(Parts_Order_List,deleted," = "," AND") */
+        Parts_Order_List.booking_id = deleted.booking_id
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Service_Bookings because Parts_Order_List exists.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Service_Bookings  Mechanics_on_Services on parent update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Service_Bookings"
+    CHILD_OWNER="", CHILD_TABLE="Mechanics_on_Services"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_11", FK_COLUMNS="svc_booking_id" */
+  IF
+    /* %ParentPK(" OR",UPDATE) */
+    UPDATE(booking_id)
+  BEGIN
+    IF EXISTS (
+      SELECT * FROM deleted,Mechanics_on_Services
+      WHERE
+        /*  %JoinFKPK(Mechanics_on_Services,deleted," = "," AND") */
+        Mechanics_on_Services.svc_booking_id = deleted.booking_id
+    )
+    BEGIN
+      SELECT @errno  = 30005,
+             @errmsg = 'Cannot update Service_Bookings because Mechanics_on_Services exists.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Cars  Service_Bookings on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Cars"
+    CHILD_OWNER="", CHILD_TABLE="Service_Bookings"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_9", FK_COLUMNS="licence_number" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(licence_number)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Cars
+        WHERE
+          /* %JoinFKPK(inserted,Cars) */
+          inserted.licence_number = Cars.licence_number
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.licence_number IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Service_Bookings because Cars does not exist.'
+      GOTO ERROR
+    END
+  END
+
+  /* ERwin Builtin Trigger */
+  /* Contacts  Service_Bookings on child update no action */
+  /* ERWIN_RELATION:CHECKSUM="00000000", PARENT_OWNER="", PARENT_TABLE="Contacts"
+    CHILD_OWNER="", CHILD_TABLE="Service_Bookings"
+    P2C_VERB_PHRASE="", C2P_VERB_PHRASE="", 
+    FK_CONSTRAINT="R_10", FK_COLUMNS="contact_id" */
+  IF
+    /* %ChildFK(" OR",UPDATE) */
+    UPDATE(contact_id)
+  BEGIN
+    SELECT @nullcnt = 0
+    SELECT @validcnt = count(*)
+      FROM inserted,Contacts
+        WHERE
+          /* %JoinFKPK(inserted,Contacts) */
+          inserted.contact_id = Contacts.contact_id
+    /* %NotnullFK(inserted," IS NULL","select @nullcnt = count(*) from inserted where"," AND") */
+    select @nullcnt = count(*) from inserted where
+      inserted.contact_id IS NULL
+    IF @validcnt + @nullcnt != @NUMROWS
+    BEGIN
+      SELECT @errno  = 30007,
+             @errmsg = 'Cannot update Service_Bookings because Contacts does not exist.'
+      GOTO ERROR
+    END
+  END
+
+
+  /* ERwin Builtin Trigger */
+  RETURN
+ERROR:
+    raiserror @errno @errmsg
+    rollback transaction
+END
+
+go
+
+

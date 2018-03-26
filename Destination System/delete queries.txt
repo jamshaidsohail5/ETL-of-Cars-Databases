@@ -1,0 +1,82 @@
+
+Part Suppier
+
+delete from Car_Parts_Supplier_Data_Mart
+delete from Cars
+delete from Parts
+delete from Ref_Car_Manufacturers
+delete from Ref_Part_Levels
+delete from Ref_Part_Manufacturers
+delete from Ref_Part_Types
+delete from Suppliers
+
+
+
+Data WareHouse
+
+delete from Car_Feactures
+delete from Car_Manufacturer
+delete from Car_Model
+delete from Car_Sold
+delete from Cars
+delete from customer
+delete from customer_Preferences
+delete from Defects
+delete from feactures_on_car_for_sale
+delete from Machanicssss
+delete from manufeturer
+delete from mechanics_on_serviec
+delete from part
+delete from part_order_list
+delete from part_type_level
+delete from ref_part_maufacturer
+delete from ref_part_type
+delete from Service_booking
+delete from suppliers
+delete from Vehical_Catagory
+
+
+
+
+Service center
+
+delete from Best_Mechanic
+delete from Car_Service_Center_Data_Mart
+delete from Cars
+delete from Contacts
+delete from Defects
+delete from Manufactures
+delete from Mechanics
+delete from Models
+delete from Most_Demanding_Part
+delete from Most_Service_Booking_Manufacturer_Name
+delete from Service_Bookings
+delete from Date
+delete from Month
+delete from Year
+delete from Most_Demanding_Car_Part
+delete from Parts
+
+
+
+Sale
+
+delete from Addresses
+delete from Car_Manufacturers
+delete from Car_Models
+delete from Car_Sales_Data_Mart
+delete from Cars_Features
+delete from Cars_for_Sale
+delete from Cars_Sold
+delete from Customer_Preferences
+delete from Customers
+delete from Most_Prefered_Feactures
+delete from Most_Demanding_Cars
+delete from Vehicle_Categories
+delete from Date
+delete from Month
+delete from Town
+delete from Year
+delete from Zip
+delete from Province
+delete from Country
